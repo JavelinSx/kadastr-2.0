@@ -22,18 +22,20 @@ class startWindow(QtWidgets.QMainWindow, fileUi.newForm.Ui_MainWindow):
         self.setWindowIcon(QIcon('img/main.ico'))
         self.setupUi(self)
         self.tableWidget.setSortingEnabled(True)
-        self.tableWidget.hideColumn(9)
-
+        self.tableWidget.hideColumn(7)
+        os.chdir("//lena/межевание/test")
         # var
-        self.comboBoxCityIndex = None
         self.newCity = None
+        self.clientInfo = None
         self.allInfoClient = None
         self.allInfoAddress = None
         self.allInfoWork = None
         self.allInfoCity = None
         self.lastIndex = None
+        self.pathFolderClient = None
         self.dbName = "kadastr 2.0.db"
-        # get info in datebase
+
+        # get info in date base
         self.getAllClientInfo()
         self.getAllInfoCity()
         # completer
@@ -60,6 +62,7 @@ class startWindow(QtWidgets.QMainWindow, fileUi.newForm.Ui_MainWindow):
         self.pushButtonEdit.clicked.connect(self.updateInfoClient)
         self.pushButtonClone.clicked.connect(self.cloneClientInfo)
 
+        #test
 
     def updateComboBoxCity(self):
         for i in range(len(self.allInfoCity)):
@@ -92,6 +95,7 @@ class startWindow(QtWidgets.QMainWindow, fileUi.newForm.Ui_MainWindow):
         with con:
             if param is None:
                 cur = con.cursor()
+                cur.execute("PRAGMA foreign_keys=ON")
                 cur.execute(sql)
                 con.commit()
                 cur.execute("SELECT last_insert_rowid()")
@@ -99,6 +103,7 @@ class startWindow(QtWidgets.QMainWindow, fileUi.newForm.Ui_MainWindow):
                 self.lastIndex = index
             else:
                 cur = con.cursor()
+                cur.execute("PRAGMA foreign_keys=ON")
                 cur.execute(sql, param)
                 con.commit()
                 cur.execute("SELECT last_insert_rowid()")
@@ -107,14 +112,7 @@ class startWindow(QtWidgets.QMainWindow, fileUi.newForm.Ui_MainWindow):
         if con:
             con.close()
 
-    def clearAddClientPage(self):
-        self.comboBoxProvideServices.setCurrentIndex(0)
-        self.lineEditCity.clear()
-        self.lineEditAddress.clear()
-        self.lineEditSurnameAdd.clear()
-        self.lineEditNameAdd.clear()
-        self.lineEditMiddleNameAdd.clear()
-        self.lineEditTelefoneAdd.clear()
+
 
     def getIdService(self, id):
 
@@ -122,23 +120,40 @@ class startWindow(QtWidgets.QMainWindow, fileUi.newForm.Ui_MainWindow):
 
         return self.querySelect(sqlIdService, (id,))
 
-    def getIDWorkInfo(self, id):
+    def getIdDocInfoClient(self, id_client):
 
-        sqlIdAddressInfo = "SELECT doc_info from info_client where id = ?"
+        sqlIdDocInfo = "SELECT * from doc_info_client where id_client = ?"
 
-        return self.querySelect(sqlIdAddressInfo, (id,))
+        return self.querySelect(sqlIdDocInfo, (id_client,))
 
-    def getIdAddressInfo(self, id):
+    def getIdCity(self, name):
+        print(self.allInfoCity)
+        for i in range(len(self.allInfoCity)):
+            if self.allInfoCity[i][1] == name:
+                return self.allInfoCity[i][0]
 
-        sqlIdAddressInfo = "SELECT address_info from info_client where id = ?"
+    def getWorkInfoClient(self, id_client):
 
-        return self.querySelect(sqlIdAddressInfo, (id,))
+        sqlIdAddressInfo = "SELECT * from work_info_client where id_client = ?"
 
-    def getIdDocInfo(self, id):
+        return self.querySelect(sqlIdAddressInfo, (id_client,))
 
-        sqlIdDocInfo = "SELECT doc_info from info_client where id = ?"
+    def getAddressInfoClient(self, id_client):
 
-        return self.querySelect(sqlIdDocInfo, (id,))
+        sqlIdAddressInfo = "SELECT * from address_info_client where id_client = ?"
+
+        return self.querySelect(sqlIdAddressInfo, (id_client,))
+
+    def getForgottenClient(self):
+        pass
+
+    def getInfoCompleteClient(self):
+        pass
+
+    def getNameCity(self, id_city):
+        for i in range(len(self.allInfoCity)):
+            if id_city == self.allInfoCity[i][0]:
+                return self.allInfoCity[i][1]
 
     def getAllClientInfo(self):
         # list of page client
@@ -152,27 +167,32 @@ class startWindow(QtWidgets.QMainWindow, fileUi.newForm.Ui_MainWindow):
         sqlInfoWork = "SELECT * from work_info_client"
         self.allInfoWork = self.querySelect(sqlInfoWork)
 
+    def getClientInfo(self, id_client):
+        sqlInfoClient = "SELECT * from info_client where id=?"
+        self.clientInfo = self.querySelect(sqlInfoClient, (id_client,))
+
     def getAllInfoCity(self):
-        sqlInfoCity = "SELECT *  from city"
+        sqlInfoCity = "SELECT * from city"
         self.allInfoCity = self.querySelect(sqlInfoCity)
 
-    def insertAddressInfo(self):
 
-        city = self.lineEditCity.text().title()
+    def insertAddressInfo(self, id_client):
+        city = self.comboBoxCity.currentText()
         address = self.lineEditAddress.text().title()
-        sqlAddressInfo = "INSERT INTO address_info_client(city,address) VALUES (?,?)"
-        self.lastIndexAddressInfo = self.queryInsert(sqlAddressInfo, (city, address,))
+        sqlAddressInfo = "INSERT INTO address_info_client(id_client,id_city,address) VALUES (?,?,?)"
 
-    def insertDocInfo(self):
+        self.lastIndexAddressInfo = self.queryInsert(sqlAddressInfo, (id_client, self.getIdCity(city), address,))
+
+    def insertDocInfo(self, id_client):
 
         passDocSeries = self.lineEditPassDocSeries.text()
         passDocDate = self.dateEditPassDocDate.text()
         passDocInfo = self.lineEditPassDocInfo.text()
         passSnils = self.lineEditPassSnils.text()
-        sqlDocInfo = "INSERT INTO doc_info_client(series,date,info,snils) VALUES (?,?,?,?)"
-        self.queryInsert(sqlDocInfo, (passDocSeries, passDocDate, passDocInfo, passSnils))
+        sqlDocInfo = "INSERT INTO doc_info_client(id_client,series,date,info,snils) VALUES (?,?,?,?,?)"
+        self.queryInsert(sqlDocInfo, (id_client, passDocSeries, passDocDate, passDocInfo, passSnils))
 
-    def insertWorkInfo(self):
+    def insertWorkInfo(self, id_client):
 
         prepayment = self.checkBoxPrepayment.checkState()
         remains = self.checkBoxRemains.checkState()
@@ -181,27 +201,30 @@ class startWindow(QtWidgets.QMainWindow, fileUi.newForm.Ui_MainWindow):
         status = self.comboBoxStatus.currentIndex()
         dateStatus = self.comboBoxStatus.currentIndex()
         info = self.textEditInfo.toPlainText()
-        sqlWorkInfo = "INSERT INTO work_info_client(prepayment,remains,work,date_work,status,date_status,info) VALUES " \
-                      "(?,?,?,?,?,?,?) "
-        self.queryInsert(sqlWorkInfo, (prepayment, remains, work, dateWork, status, dateStatus, info))
+        sqlWorkInfo = "INSERT INTO work_info_client(id_client,prepayment,remains,work,date_work,status,date_status,info) VALUES " \
+                      "(?,?,?,?,?,?,?,?) "
+        self.queryInsert(sqlWorkInfo, (id_client, prepayment, remains, work, dateWork, status, dateStatus, info))
 
     def insertInfoClient(self):
-        self.insertAddressInfo()
-        lastIndexAddressInfo = self.lastIndex
-        self.insertWorkInfo()
-        lastIndexWorkInfo = self.lastIndex
-        self.insertDocInfo()
-        lastIndexDocInfo = self.lastIndex
+
+        self.createFolder()
+
         service = self.comboBoxProvideServices.currentIndex()
         surName = self.lineEditSurnameAdd.text()
         name = self.lineEditNameAdd.text()
         middleName = self.lineEditMiddleNameAdd.text()
         telefone = self.lineEditTelefoneAdd.text()
-        sqlInfoClient = "INSERT INTO info_client(sur_name,name,middle_name,telefone,address_info,doc_info,work_info," \
-                        "service) VALUES (?,?,?,?,?,?,?,?) "
+        sqlInfoClient = "INSERT INTO info_client(sur_name,name,middle_name,telefone,path_folder,service) VALUES (?,?," \
+                        "?,?,?,?) "
         self.queryInsert(sqlInfoClient, (
-            surName, name, middleName, telefone, int(lastIndexAddressInfo[0]), int(lastIndexDocInfo[0]),
-            int(lastIndexWorkInfo[0]), int(service)))
+            surName, name, middleName, telefone, os.path.abspath(self.pathFolderClient), int(service)))
+        lastIndexCleint = self.lastIndex
+
+        self.insertAddressInfo(lastIndexCleint[0])
+
+        self.insertWorkInfo(lastIndexCleint[0])
+
+        self.insertDocInfo(lastIndexCleint[0])
 
     def insertCity(self):
         check = False
@@ -216,7 +239,6 @@ class startWindow(QtWidgets.QMainWindow, fileUi.newForm.Ui_MainWindow):
         dlg.resize(300, 100)
         ok = dlg.exec_()
         city = dlg.textValue()
-        print(self.allInfoCity)
         if ok:
 
             for i in range(len(allCity)):
@@ -226,26 +248,25 @@ class startWindow(QtWidgets.QMainWindow, fileUi.newForm.Ui_MainWindow):
                     check = True
             if check:
                 self.comboBoxCity.addItem(city)
-
                 self.queryInsert(sqlCItyIndex, (city,))
-
-
+                self.getAllInfoCity()
 
 
     def updateTableClient(self):
         self.getAllClientInfo()
+        self.tableWidget.setRowCount(0)
         lenInfoClient = len(self.allInfoClient)
 
         for i in range(lenInfoClient):
             self.tableWidget.insertRow(self.tableWidget.rowCount())
-
-            statusWorkText = self.comboBoxStatus.itemText(self.allInfoWork[i][3])
-            addressCityText = self.allInfoAddress[i][1]
+            id = str(self.allInfoClient[i][0])
+            statusWorkText = self.comboBoxStatus.itemText(self.getWorkInfoClient(id)[0][4])
+            addressCityText = self.getNameCity(self.allInfoAddress[i][1])
             surNameText = self.allInfoClient[i][1]
             nameText = self.allInfoClient[i][2]
             middleNameText = self.allInfoClient[i][3]
             telefoneText = self.allInfoClient[i][4]
-            serviceText = self.comboBoxProvideServices.itemText(self.allInfoClient[i][8])
+            serviceText = self.comboBoxProvideServices.itemText(self.allInfoClient[i][6])
 
             item = QTableWidgetItem()
             item.setText(statusWorkText)  # status
@@ -275,31 +296,67 @@ class startWindow(QtWidgets.QMainWindow, fileUi.newForm.Ui_MainWindow):
             item.setText(serviceText)  # service
             self.tableWidget.setItem(i, 6, item)
 
-    def addClient(self):
-        self.insertInfoClient()
-        self.clearAddClientPage()
-
-    def openFolder(self):
-        pass
+            item = QTableWidgetItem()
+            item.setText(id)  # id
+            self.tableWidget.setItem(i, 7, item)
 
     def updateInfoClient(self):
         pass
 
+
+    def createFolder(self):
+        path = os.path.join(os.getcwd(),
+                            self.comboBoxProvideServices.currentText(),
+                            self.comboBoxCity.currentText(),
+                            self.lineEditAddress.text() + " " + self.lineEditSurname.text())
+        os.makedirs(path)
+        os.startfile(path)
+        self.pathFolderClient = path
+
+    def openFolder(self):
+        try:
+            os.startfile(os.path.abspath(self.pathFolderClient))
+        except FileNotFoundError as text:
+            QMessageBox.critical(self, "Ошибка ", str(text), QMessageBox.Ok)
+
+    def deleteFolder(self, path):
+        shutil.rmtree(path)
+
+
+    def addClient(self):
+        self.insertInfoClient()
+        self.clearAddClientPage()
+
     def deleteClient(self):
-        pass
+        buttonReply = QMessageBox.question(self, 'Подтверждение действия', "Удалить выбранную запись?",
+                                           QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
+        if buttonReply == QMessageBox.Yes:
+            try:
+                id_client = self.tableWidget.item(self.tableWidget.currentRow(),7).text()
+                self.getClientInfo(int(id_client))
+                clientPathFolder = self.clientInfo[0][5]
+                self.deleteFolder(clientPathFolder)
+                sql = "DELETE FROM info_client WHERE id=?"
+                self.queryInsert(sql, (id_client,))
+
+            except PermissionError:
+                self.msgError("Удаление невозможно, закройте файлы находящиеся в папке")
 
     def searchClient(self):
-        pass
-
-    def getForgottenClient(self):
-        pass
-
-    def getInfoCompleteClient(self):
         pass
 
     def cloneClientInfo(self):
         pass
 
+
+    def clearAddClientPage(self):
+        self.comboBoxProvideServices.setCurrentIndex(0)
+        self.comboBoxCity.setCurrentIndex(0)
+        self.lineEditAddress.clear()
+        self.lineEditSurnameAdd.clear()
+        self.lineEditNameAdd.clear()
+        self.lineEditMiddleNameAdd.clear()
+        self.lineEditTelefoneAdd.clear()
 
 def main():
     import ctypes
