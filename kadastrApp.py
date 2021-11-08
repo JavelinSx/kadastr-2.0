@@ -164,8 +164,10 @@ class startWindow(QtWidgets.QMainWindow, fileUi.newForm.Ui_MainWindow):
         self.allInfoWork = self.querySelect(sqlInfoWork)
 
     def getClientInfo(self, id_client):
+
         sqlInfoClient = "SELECT * from info_client where id=?"
-        self.clientInfo = self.querySelect(sqlInfoClient, (id_client,))
+
+        return self.querySelect(sqlInfoClient, (id_client,))
 
     def getAllInfoCity(self):
         sqlInfoCity = "SELECT * from city"
@@ -331,6 +333,39 @@ class startWindow(QtWidgets.QMainWindow, fileUi.newForm.Ui_MainWindow):
             self.comboBoxCity.clear()
             self.getAllInfoCity()
 
+    def fillClientInfo(self):
+        #info data
+
+        infoClient = self.getClientInfo(int(self.tableWidget.item(self.tableWidget.currentRow(), 7).text()))
+        infoPassportClient = []
+        infoWorkClient = []
+
+        #info client
+
+        surName = ''
+        name = ''
+        middleName = ''
+        telefone = ''
+
+        #passport info
+
+        series = ''
+        datePassport = ''
+        infoPassport = ''
+        snils = ''
+
+        #work info
+
+        paymant = ''
+        prepaymant = ''
+        wokrStatus = ''
+        dateWorkStatus = ''
+        status = ''
+        dateStatus = ''
+        info = ''
+
+        pass
+
     def createFolder(self):
         path = os.path.join(os.getcwd(),
                             self.comboBoxProvideServices.currentText(),
@@ -360,8 +395,8 @@ class startWindow(QtWidgets.QMainWindow, fileUi.newForm.Ui_MainWindow):
         if buttonReply == QMessageBox.Yes:
             try:
                 id_client = self.tableWidget.item(self.tableWidget.currentRow(),7).text()
-                self.getClientInfo(int(id_client))
-                clientPathFolder = self.clientInfo[0][5]
+
+                clientPathFolder = self.getClientInfo(int(id_client))[0][5]
                 self.deleteFolder(clientPathFolder)
                 sql = "DELETE FROM info_client WHERE id=?"
                 self.queryInsert(sql, (id_client,))
