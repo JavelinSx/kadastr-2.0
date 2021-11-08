@@ -54,7 +54,7 @@ class startWindow(QtWidgets.QMainWindow, fileUi.newForm.Ui_MainWindow):
         self.pushButtonViewForgotten.clicked.connect(self.getForgottenClient)
         self.pushButtonViewReady.clicked.connect(self.getInfoCompleteClient)
         # page add client
-        self.updateComboBoxCity()
+        self.pushButtonChangeCity.clicked.connect(self.updateInfoCity)
         self.pushButtonAdd.clicked.connect(self.addClient)
         self.pushButtonAddCity.clicked.connect(self.insertCity)
         # page update client
@@ -63,10 +63,6 @@ class startWindow(QtWidgets.QMainWindow, fileUi.newForm.Ui_MainWindow):
         self.pushButtonClone.clicked.connect(self.cloneClientInfo)
 
         #test
-
-    def updateComboBoxCity(self):
-        for i in range(len(self.allInfoCity)):
-            self.comboBoxCity.addItem(self.allInfoCity[i][1])
 
     def msgInfo(self, text):
         QMessageBox.information(self, "Информация",
@@ -174,6 +170,11 @@ class startWindow(QtWidgets.QMainWindow, fileUi.newForm.Ui_MainWindow):
     def getAllInfoCity(self):
         sqlInfoCity = "SELECT * from city"
         self.allInfoCity = self.querySelect(sqlInfoCity)
+        self.allOnlyCity = []
+        for index in range(len(self.allInfoCity)):
+            self.allOnlyCity.append(self.allInfoCity[index][1])
+
+        self.comboBoxCity.addItems(self.allOnlyCity)
 
 
     def insertAddressInfo(self, id_client):
@@ -228,10 +229,7 @@ class startWindow(QtWidgets.QMainWindow, fileUi.newForm.Ui_MainWindow):
 
     def insertCity(self):
         check = False
-        allCity = []
-        sqlCItyIndex = "INSERT INTO city (city_name) values(?)"
-        for i in range(self.comboBoxCity.count()):
-            allCity.append(self.comboBoxCity.itemText(i))
+        sqlInsertCity = "INSERT INTO city(city_name) values(?)"
         dlg = QInputDialog(self)
         dlg.setInputMode(QInputDialog.TextInput)
         dlg.setWindowTitle("Добавить населенный пункт")
@@ -240,16 +238,18 @@ class startWindow(QtWidgets.QMainWindow, fileUi.newForm.Ui_MainWindow):
         ok = dlg.exec_()
         city = dlg.textValue()
         if ok:
-
-            for i in range(len(allCity)):
-                if city == allCity[i]:
+            for i in range(len(self.allOnlyCity)):
+                if self.allOnlyCity[i] == city:
+                    self.msgInfo("Найден похожий населенный пункт")
                     check = False
+                    break
                 else:
                     check = True
-            if check:
-                self.comboBoxCity.addItem(city)
-                self.queryInsert(sqlCItyIndex, (city,))
-                self.getAllInfoCity()
+        if check:
+            self.queryInsert(sqlInsertCity, (city,))
+            self.msgInfo("Населенный пункт добавлен")
+            self.comboBoxCity.clear()
+            self.getAllInfoCity()
 
 
     def updateTableClient(self):
@@ -303,6 +303,33 @@ class startWindow(QtWidgets.QMainWindow, fileUi.newForm.Ui_MainWindow):
     def updateInfoClient(self):
         pass
 
+    def updateInfoCity(self):
+        check = False
+        index = ''
+        sqlUpdateCity = "UPDATE city SET city_name = ? where id = ?"
+        dlg = QInputDialog(self)
+        dlg.setInputMode(QInputDialog.TextInput)
+        dlg.setWindowTitle("Добавить населенный пункт")
+        dlg.setLabelText("")
+        dlg.setTextValue(self.comboBoxCity.currentText())
+
+        dlg.resize(300, 100)
+        ok = dlg.exec_()
+        city = dlg.textValue()
+        if ok:
+            for i in range(len(self.allOnlyCity)):
+                if self.allOnlyCity[i] == city:
+                    self.msgInfo("Найден похожий населенный пункт")
+                    check = False
+                    break
+                else:
+                    index = self.comboBoxCity.currentIndex()+1
+                    check = True
+        if check:
+            self.queryInsert(sqlUpdateCity, (city, index))
+            self.msgInfo("Населенный пункт изменен")
+            self.comboBoxCity.clear()
+            self.getAllInfoCity()
 
     def createFolder(self):
         path = os.path.join(os.getcwd(),
@@ -368,7 +395,6 @@ def main():
     window.show()
     app.setStyle('Fusion')
     sys.exit(app.exec_())
-
 
 if __name__ == "__main__":
     main()
